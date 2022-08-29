@@ -13,17 +13,12 @@ from scipy.ndimage.morphology import distance_transform_edt
 from loss import dice_loss, hwd_loss, gen_dice_loss, dice_edge
 from metrics import runningScore
 
-from models import decouple_Net,Decouple,decouple_res,decouple_multiscale,decouple_body
-#from AttU_Net import AttU_Net
-#from CA_Net import CA_Unet
-#from UNet_SE import SE_UNet
-#from HR_Net import HR_Net
-#from UNet_3Plus import UNet_3plus,UNet_3Plus_DeepSup
+from models import decouple_Net
 from preprocess import IBSR_Img, IBSR_Label, get_mask_region, IBSR
 from utils import adjust_learning_rate, elastic_deformation,random_img_elastic_deformation
 
 
-def preprocess(PATH, IDs_train, IDs_val, label_s, label_t, is_flip=False, is_rotate=False, is_rgb=False): #,p='20%'
+def preprocess(PATH, IDs_train, IDs_val, label_s, label_t, is_flip=False, is_rotate=False, is_rgb=False): 
     # train
     train_img = IBSR_Img()
     train_img.read(PATH, IDs_train)
@@ -164,18 +159,11 @@ def train(args):
             label_ = label[0, :, :].cpu() #176, 160 
             edge = mask_to_edges(label_).cuda()
            
-            optimizer.zero_grad()
-            #outputs = model(img)
-            #outputs,edge_out = model(img)
-            outputs,body_out, edge_out = model(img) #,_,_,_,_,_
-            #outputs,o4,o3,o2,o1 = model(img) 
-            #outputs,edge_out,o4,o3,o2,o1 = model(img) #8, 8, 176, 160; 8, 1, 176, 160 ,o4,o3,o2,o1
-            edge_out = edge_out[0, :, :, :]
-            #loss = loss_ce(outputs, label) + loss_dc(outputs=outputs, gt=label) +loss_edge(edge_out, edge)
+            optimizer.zero_grad()   
+            outputs,body_out, edge_out = model(img)            
+            edge_out = edge_out[0, :, :, :]           
             loss = loss_ce(outputs, label) + loss_dc(outputs=outputs, gt=label) + loss_ce(body_out, label)+ loss_dc(outputs=body_out, gt=label)+loss_edge(edge_out, edge)#+loss_de(outputs=edge_out, gt=edge.long()) 
-            #loss = 0.5 * loss_ce(outputs, label) + 0.5 * loss_dc(outputs=outputs, gt=label)
-            #loss = loss_ce(outputs, label)+ loss_ce(o1, label)+loss_ce(o2, label)+ loss_ce(o3, label)+ loss_ce(o4, label) #
-                 
+            
             loss.backward()
             optimizer.step()
             loss_epoch += loss.item()
@@ -193,7 +181,7 @@ def train(args):
             img = img.cuda()
             label = label.numpy()
             with torch.no_grad():
-                outputs_all, _, _= model(img) #, _, _, _, _, _
+                outputs_all, _, _= model(img) 
                 outputs = outputs_all[0, :, :, :]
             pred = outputs.data.max(0)[1].cpu().numpy()
             running_metrics.update(label, pred)
@@ -238,10 +226,9 @@ if __name__ == '__main__':
 
     args['label_source'] = (9, 10, 11, 12, 13, 17, 18, 48, 49, 50, 51, 52, 53, 54)
     args['label_target'] = (1,1,2,3,4,5,6,7,7,8,9,10,11,12)
-    #args['label_target'] = (1, 1, 2, 3, 4, 5, 6, 1, 1, 2, 3, 4, 5, 6)
     args['n_epoch'] = 15
     args['model_args'] = {'in_channels': 1, 'num_classes': 13}
-    args['experiment_i'] =10
+    args['experiment_i'] =0
     args['save_dict'] = True
 
     if args['save_dict']:
@@ -264,8 +251,7 @@ if __name__ == '__main__':
           (['18', '03', '12', '04', '06', '05', '02', '15', '07'], ['01', '08', '09', '10', '11', '13', '14', '16', '17']),
           (['15', '14', '18', '07', '06', '16', '04', '08', '12'], ['01', '02', '03', '05', '09', '10', '11', '13', '17']),
           (['11', '10', '18', '13', '17', '14', '06', '01', '03'], ['02', '04', '05', '07', '08', '09', '12', '15', '16']),
-          (['09', '18', '15', '01', '16', '13', '03', '04', '07'], ['02', '05', '06', '08', '10', '11', '12', '14', '17']),
-          (['01', '02', '03', '04', '05', '06', '07', '08', '09', '12', '18'], ['10', '11', '12', '13', '14', '15', '16', '17', '18'])]
+          (['09', '18', '15', '01', '16', '13', '03', '04', '07'], ['02', '05', '06', '08', '10', '11', '12', '14', '17'])]
  
     args['IDs_train'], args['IDs_val'] = IDs[args['experiment_i']]
     train(args)
