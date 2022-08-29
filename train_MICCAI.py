@@ -1,6 +1,5 @@
 from preprocess import MICCAI_Img, MICCAI_Label, get_mask_region, MICCAI
-from models import NestedUNet, U_Net,shape_Unet,edge_Net,supv_UNet,decouple_Net,Decouple,decouple_body,decouple_multiscale,decouple_res
-from AttU_Net import AttU_Net
+from models import decouple_Net
 import numpy  as np
 import torch
 import torch.nn as nn
@@ -153,18 +152,11 @@ def train(args):
             label_ = label[0, :, :].cpu() #176, 160 
             edge = mask_to_edges(label_).cuda()
             
-            optimizer.zero_grad()
-            #outputs = model(img)   
-            #outputs,edge_out = model(img)
-            outputs,body_out, edge_out = model(img) #
-            #outputs,o4,o3,o2,o1 = model(img) 
-            #outputs,edge_out,o4,o3,o2,o1 = model(img) #8, 8, 176, 160; 8, 1, 176, 160 ,o4,o3,o2,o1
-            edge_out = edge_out[0, :, :, :]
-            #loss = loss_ce(outputs, label) + loss_dc(outputs=outputs, gt=label) +loss_edge(edge_out, edge)
+            optimizer.zero_grad()            
+            outputs,body_out, edge_out = model(img) #    
+            edge_out = edge_out[0, :, :, :]            
             loss = loss_ce(outputs, label) + loss_dc(outputs=outputs, gt=label) + loss_ce(body_out, label)+ loss_dc(outputs=body_out, gt=label)+loss_edge(edge_out, edge)#+loss_de(outputs=edge_out, gt=edge.long()) 
-            #loss = 0.5 * loss_ce(outputs, label) + 0.5 * loss_dc(outputs=outputs, gt=label)
-            #loss = loss_ce(outputs, label)+ loss_ce(o1, label)+loss_ce(o2, label)+ loss_ce(o3, label)+ loss_ce(o4, label) #
-
+           
             loss.backward()
             optimizer.step()
             loss_epoch += loss.item()
@@ -184,7 +176,7 @@ def train(args):
             img = img.cuda()
             label = label.numpy()
             with torch.no_grad():
-                outputs, _, _ = model(img)#, _, _
+                outputs, _, _ = model(img)
                 outputs = outputs[0, :, :, :]
             pred = outputs.data.max(0)[1].cpu().numpy()
             running_metrics.update(label, pred)
@@ -229,11 +221,10 @@ if __name__ == '__main__':
 
 
     args['label_source'] = (59, 60, 36, 37, 57, 58, 55, 56, 47, 48, 31, 32)
-    args['label_target'] = (1,2,3,4,5,6,7,8,9,10,11,12)
-    #args['label_target'] = (1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6)
+    args['label_target'] = (1,2,3,4,5,6,7,8,9,10,11,12)  
     args['n_epoch'] = 15
     args['model_args'] = {'in_channels': 1, 'num_classes': 13}
-    args['experiment_i'] = 10
+    args['experiment_i'] = 0
     args['save_dict'] = True
 
     if args['save_dict']:
@@ -264,9 +255,7 @@ if __name__ == '__main__':
         (['32', '21', '15', '35', '34', '26', '11', '09', '30', '22', '03', '20', '06', '18', '10'],
          ['27', '02', '13', '29', '25', '31', '19', '07', '23', '17', '01', '14', '08', '33', '24', '28', '12', '05', '16', '04']),
         (['19', '02', '35', '16', '21', '03', '31', '34', '23', '24', '32', '17', '28', '07', '15'],
-         ['06', '27', '09', '13', '29', '25', '18', '01', '20', '26', '22', '14', '10', '08', '33', '12', '30', '11', '05', '04']),
-        (['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15'],
-         ['16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35'])]
+         ['06', '27', '09', '13', '29', '25', '18', '01', '20', '26', '22', '14', '10', '08', '33', '12', '30', '11', '05', '04'])]
 
     args['IDs_train'], args['IDs_val'] = IDs[args['experiment_i']]
     train(args)
