@@ -222,7 +222,7 @@ if __name__ == '__main__':
 
     args['label_source'] = (59, 60, 36, 37, 57, 58, 55, 56, 47, 48, 31, 32)
     args['label_target'] = (1,2,3,4,5,6,7,8,9,10,11,12)  
-    args['n_epoch'] = 15
+    args['n_epoch'] = 120
     args['model_args'] = {'in_channels': 1, 'num_classes': 13}
     args['experiment_i'] = 0
     args['save_dict'] = True
