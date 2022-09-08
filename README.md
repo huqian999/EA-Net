@@ -3,5 +3,4 @@
 Python 3.7
 Linux 
 # Dataset
-Internet Brain Segmentation Repository (IBSR)
-Multi-Atlas Labeling Challenge 2012 (MALC)
+Internet Brain Segmentation Repository (IBSR), Multi-Atlas Labeling Challenge 2012 (MALC)
